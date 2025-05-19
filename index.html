@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Калькулятор текучести персонала</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Century+Gothic:wght@400;700&display=swap');
+    body {
+      font-family: 'Century Gothic', Arial, sans-serif;
+      background: #f8f9fa;
+      margin: 0;
+      padding: 0;
+    }
+    .calculator-container {
+      width: 1100px;
+      margin: 40px auto;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      padding: 40px 60px;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      font-weight: 700;
+      color: #222;
+    }
+    .desc {
+      color: #555;
+      margin-bottom: 30px;
+      font-size: 1.1rem;
+    }
+    .form-section {
+      display: flex;
+      gap: 60px;
+      margin-bottom: 30px;
+    }
+    .form-group {
+      margin-bottom: 18px;
+    }
+    label {
+      display: block;
+      font-size: 1.1rem;
+      margin-bottom: 6px;
+      color: #333;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      font-size: 1.1rem;
+      border: 1px solid #bbb;
+      border-radius: 6px;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+    .formula {
+      background: #f1f3f6;
+      border-radius: 8px;
+      padding: 14px 18px;
+      font-size: 1rem;
+      color: #444;
+      margin-bottom: 18px;
+    }
+    .btn-calc {
+      background: #2d7ff9;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 12px 32px;
+      font-size: 1.2rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 10px;
+    }
+    .btn-calc:hover {
+      background: #1a5fc2;
+    }
+    .result {
+      margin-top: 30px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1a5fc2;
+      background: #eaf2ff;
+      border-radius: 8px;
+      padding: 18px 24px;
+      display: inline-block;
+    }
+    @media (max-width: 1200px) {
+      .calculator-container { width: 98vw; padding: 20px 5vw; }
+      .form-section { flex-direction: column; gap: 30px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator-container">
+    <h1>Калькулятор текучести персонала</h1>
+    <div class="desc">
+      Рассчитайте коэффициент текучести сотрудников и текучесть новых сотрудников на испытательном сроке.
+    </div>
+    <div class="form-section">
+      <!-- Основная текучесть -->
+      <div style="flex:1;">
+        <div class="formula">
+          <b>Формула:</b><br>
+          Текучесть = (Количество уволившихся / Среднесписочная численность) × 100%<br>
+          <span style="font-size:0.95em;color:#888;">
+            Среднесписочная численность = (Численность на начало + Численность на конец) / 2
+          </span>
+        </div>
+        <div class="form-group">
+          <label for="start">Численность на начало периода</label>
+          <input type="number" id="start" min="0" placeholder="Введите число">
+        </div>
+        <div class="form-group">
+          <label for="end">Численность на конец периода</label>
+          <input type="number" id="end" min="0" placeholder="Введите число">
+        </div>
+        <div class="form-group">
+          <label for="left">Количество уволившихся</label>
+          <input type="number" id="left" min="0" placeholder="Введите число">
+        </div>
+      </div>
+      <!-- Текучесть новых сотрудников -->
+      <div style="flex:1;">
+        <div class="formula">
+          <b>Формула:</b><br>
+          Текучесть новых сотрудников = (Уволившиеся новые / Принятые новые) × 100%
+        </div>
+        <div class="form-group">
+          <label for="newhired">Количество новых сотрудников</label>
+          <input type="number" id="newhired" min="0" placeholder="Введите число">
+        </div>
+        <div class="form-group">
+          <label for="newleft">Уволившиеся новые сотрудники на испытательном сроке</label>
+          <input type="number" id="newleft" min="0" placeholder="Введите число">
+        </div>
+      </div>
+    </div>
+    <button class="btn-calc" onclick="calculate()">Рассчитать</button>
+    <div id="result" class="result" style="display:none;"></div>
+  </div>
+  <script>
+    function calculate() {
+      // Основная текучесть
+      const start = parseFloat(document.getElementById('start').value) || 0;
+      const end = parseFloat(document.getElementById('end').value) || 0;
+      const left = parseFloat(document.getElementById('left').value) || 0;
+      const avg = (start + end) / 2;
+      let turnover = avg > 0 ? (left / avg) * 100 : 0;
+
+      // Текучесть новых сотрудников
+      const newhired = parseFloat(document.getElementById('newhired').value) || 0;
+      const newleft = parseFloat(document.getElementById('newleft').value) || 0;
+      let newturnover = newhired > 0 ? (newleft / newhired) * 100 : 0;
+
+      let res = '';
+      res += `Текучесть персонала: <b>${turnover.toFixed(2)}%</b><br>`;
+      res += `Текучесть новых сотрудников на испытательном сроке: <b>${newturnover.toFixed(2)}%</b>`;
+      document.getElementById('result').innerHTML = res;
+      document.getElementById('result').style.display = 'block';
+    }
+  </script>
+</body>
+</html>
