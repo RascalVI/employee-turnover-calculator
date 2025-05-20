@@ -86,6 +86,12 @@
       padding: 18px 24px;
       display: inline-block;
     }
+    .section-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 20px;
+    }
     @media (max-width: 1200px) {
       .calculator-container { width: 98vw; padding: 20px 5vw; }
       .form-section { flex-direction: column; gap: 30px; }
@@ -101,6 +107,7 @@
     <div class="form-section">
       <!-- Основная текучесть -->
       <div style="flex:1;">
+        <div class="section-title">Расчет общей текучести персонала</div>
         <div class="formula">
           <b>Формула:</b><br>
           Текучесть = (Количество уволившихся / Среднесписочная численность) × 100%<br>
@@ -120,9 +127,12 @@
           <label for="left">Количество уволившихся</label>
           <input type="number" id="left" min="0" placeholder="Введите число">
         </div>
+        <button class="btn-calc" onclick="calculateGeneral()">Рассчитать общую текучесть</button>
+        <div id="resultGeneral" class="result" style="display:none;"></div>
       </div>
       <!-- Текучесть новых сотрудников -->
       <div style="flex:1;">
+        <div class="section-title">Расчет текучести на испытательном сроке</div>
         <div class="formula">
           <b>Формула:</b><br>
           Текучесть новых сотрудников = (Уволившиеся новые / Принятые новые) × 100%
@@ -135,30 +145,32 @@
           <label for="newleft">Уволившиеся новые сотрудники на испытательном сроке</label>
           <input type="number" id="newleft" min="0" placeholder="Введите число">
         </div>
+        <button class="btn-calc" onclick="calculateNew()">Рассчитать текучесть на ИС</button>
+        <div id="resultNew" class="result" style="display:none;"></div>
       </div>
     </div>
-    <button class="btn-calc" onclick="calculate()">Рассчитать</button>
-    <div id="result" class="result" style="display:none;"></div>
   </div>
   <script>
-    function calculate() {
-      // Основная текучесть
+    function calculateGeneral() {
       const start = parseFloat(document.getElementById('start').value) || 0;
       const end = parseFloat(document.getElementById('end').value) || 0;
       const left = parseFloat(document.getElementById('left').value) || 0;
       const avg = (start + end) / 2;
       let turnover = avg > 0 ? (left / avg) * 100 : 0;
 
-      // Текучесть новых сотрудников
+      document.getElementById('resultGeneral').innerHTML = 
+        `Текучесть персонала: <b>${turnover.toFixed(2)}%</b>`;
+      document.getElementById('resultGeneral').style.display = 'block';
+    }
+
+    function calculateNew() {
       const newhired = parseFloat(document.getElementById('newhired').value) || 0;
       const newleft = parseFloat(document.getElementById('newleft').value) || 0;
       let newturnover = newhired > 0 ? (newleft / newhired) * 100 : 0;
 
-      let res = '';
-      res += `Текучесть персонала: <b>${turnover.toFixed(2)}%</b><br>`;
-      res += `Текучесть новых сотрудников на испытательном сроке: <b>${newturnover.toFixed(2)}%</b>`;
-      document.getElementById('result').innerHTML = res;
-      document.getElementById('result').style.display = 'block';
+      document.getElementById('resultNew').innerHTML = 
+        `Текучесть новых сотрудников на испытательном сроке: <b>${newturnover.toFixed(2)}%</b>`;
+      document.getElementById('resultNew').style.display = 'block';
     }
   </script>
 </body>
