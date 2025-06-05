@@ -18,6 +18,7 @@
       border-radius: 18px;
       box-shadow: 0 4px 24px rgba(0,0,0,0.08);
       padding: 40px 60px;
+      position: relative;
     }
     h1 {
       font-size: 2.5rem;
@@ -80,11 +81,60 @@
       margin-top: 30px;
       font-size: 1.5rem;
       font-weight: 700;
-      color: #1a5fc2;
-      background: #eaf2ff;
       border-radius: 8px;
       padding: 18px 24px;
       display: inline-block;
+      position: relative;
+    }
+    .info-icon {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 20px;
+      height: 20px;
+      background-color: #ffffff;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 20px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .tooltip {
+      display: none;
+      position: absolute;
+      bottom: 100%;
+      right: -20px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 0.9rem;
+      color: #333;
+      width: 360px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      z-index: 10;
+      margin-bottom: 10px;
+    }
+    .tooltip:after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      right: 20px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: #fff transparent transparent transparent;
+    }
+    .tooltip:before {
+      content: '';
+      position: absolute;
+      top: 100%;
+      right: 20px;
+      border-width: 6px;
+      border-style: solid;
+      border-color: #ccc transparent transparent transparent;
+    }
+    .info-icon:hover + .tooltip {
+      display: block;
     }
     .section-title {
       font-size: 1.3rem;
@@ -127,8 +177,15 @@
           <label for="left">Количество уволившихся</label>
           <input type="number" id="left" min="0" placeholder="Введите число">
         </div>
+        <div class="form-group">
+          <label for="months">Количество месяцев в отчётном периоде</label>
+          <input type="number" id="months" min="1" max="12" placeholder="Например, 5">
+        </div>
         <button class="btn-calc" onclick="calculateGeneral()">Рассчитать общую текучесть</button>
-        <div id="resultGeneral" class="result" style="display:none;"></div>
+        <div id="resultGeneral" class="result" style="display:none;">
+          <div class="info-icon">i</div>
+          <div id="tooltipContent" class="tooltip"></div>
+        </div>
       </div>
       <!-- Текучесть новых сотрудников -->
       <div style="flex:1;">
@@ -146,7 +203,7 @@
           <input type="number" id="newleft" min="0" placeholder="Введите число">
         </div>
         <button class="btn-calc" onclick="calculateNew()">Рассчитать текучесть на ИС</button>
-        <div id="resultNew" class="result" style="display:none;"></div>
+        <div id="resultNew" class="result" style="display:none;background:#eaf2ff;"></div>
       </div>
     </div>
   </div>
@@ -155,12 +212,45 @@
       const start = parseFloat(document.getElementById('start').value) || 0;
       const end = parseFloat(document.getElementById('end').value) || 0;
       const left = parseFloat(document.getElementById('left').value) || 0;
-      const avg = (start + end) / 2;
-      let turnover = avg > 0 ? (left / avg) * 100 : 0;
+      const months = parseFloat(document.getElementById('months').value) || 0;
 
-      document.getElementById('resultGeneral').innerHTML = 
-        `Текучесть персонала: <b>${turnover.toFixed(2)}%</b>`;
-      document.getElementById('resultGeneral').style.display = 'block';
+      const avg = (start + end) / 2;
+      const turnover = avg > 0 ? (left / avg) * 100 : 0;
+
+      let forecast = null;
+      if (months > 0 && months < 12) {
+        forecast = (turnover / months) * 12;
+      }
+
+      let color = '#1a5fc2';
+      let bgColor = '#eaf2ff';
+      let tooltip = '';
+
+      if (forecast !== null) {
+        if (forecast >= 20) {
+          color = '#c0392b';
+          bgColor = '#fbeaea';
+          tooltip = '<b>Высокий уровень:</b><br>Необходимо срочно проанализировать причины текучести, усилить корпоративную культуру и адаптацию.';
+        } else if (forecast >= 10) {
+          color = '#f39c12';
+          bgColor = '#fff3e0';
+          tooltip = '<b>Средний уровень:</b><br>Проведите анализ причин увольнений, пересмотрите мотивацию и адаптацию новых сотрудников.';
+        } else {
+          color = '#27ae60';
+          bgColor = '#eafaf1';
+          tooltip = '<b>Нормальный уровень:</b><br>Продолжайте мониторинг и поддерживайте инициативу персонала.';
+        }
+      }
+
+      const resultBlock = document.getElementById('resultGeneral');
+      const tooltipBlock = document.getElementById('tooltipContent');
+      let message = `Текучесть персонала: <b>${turnover.toFixed(2)}%</b>`;
+      if (forecast !== null) message += `<br>Прогнозная годовая текучесть: <b>${forecast.toFixed(2)}%</b>`;
+
+      resultBlock.innerHTML = `<div class="info-icon">i</div><div id="tooltipContent" class="tooltip">${tooltip}</div>` + message;
+      resultBlock.style.color = color;
+      resultBlock.style.background = bgColor;
+      resultBlock.style.display = 'block';
     }
 
     function calculateNew() {
@@ -168,9 +258,9 @@
       const newleft = parseFloat(document.getElementById('newleft').value) || 0;
       let newturnover = newhired > 0 ? (newleft / newhired) * 100 : 0;
 
-      document.getElementById('resultNew').innerHTML = 
-        `Текучесть новых сотрудников на испытательном сроке: <b>${newturnover.toFixed(2)}%</b>`;
-      document.getElementById('resultNew').style.display = 'block';
+      const resultNew = document.getElementById('resultNew');
+      resultNew.innerHTML = `Текучесть новых сотрудников на испытательном сроке: <b>${newturnover.toFixed(2)}%</b>`;
+      resultNew.style.display = 'block';
     }
   </script>
 </body>
