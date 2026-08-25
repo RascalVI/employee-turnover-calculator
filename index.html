@@ -86,6 +86,12 @@
       display: inline-block;
       position: relative;
     }
+    .result.error {
+      color: #a93226;
+      background: #fbeaea;
+      font-size: 1rem;
+      font-weight: 400;
+    }
     .info-icon {
       position: absolute;
       top: 12px;
@@ -162,27 +168,32 @@
           <b>Формула:</b><br>
           Текучесть = (Количество уволившихся / Среднесписочная численность) × 100%<br>
           <span style="font-size:0.95em;color:#888;">
-            Среднесписочная численность = (Численность на начало + Численность на конец) / 2
+            Средняя численность = (Численность на начало + Численность на конец) / 2<br>
+            Кадровый баланс: Численность на конец = Численность на начало + Принятые − Уволившиеся
           </span>
         </div>
         <div class="form-group">
           <label for="start">Численность на начало периода</label>
-          <input type="number" id="start" min="0" placeholder="Введите число">
+          <input type="number" id="start" min="0" step="1" required placeholder="Введите число">
+        </div>
+        <div class="form-group">
+          <label for="hired">Количество принятых сотрудников</label>
+          <input type="number" id="hired" min="0" step="1" required placeholder="Введите число">
         </div>
         <div class="form-group">
           <label for="end">Численность на конец периода</label>
-          <input type="number" id="end" min="0" placeholder="Введите число">
+          <input type="number" id="end" min="0" step="1" required placeholder="Введите число">
         </div>
         <div class="form-group">
           <label for="left">Количество уволившихся</label>
-          <input type="number" id="left" min="0" placeholder="Введите число">
+          <input type="number" id="left" min="0" step="1" required placeholder="Введите число">
         </div>
         <div class="form-group">
           <label for="months">Количество месяцев в отчётном периоде</label>
-          <input type="number" id="months" min="1" max="12" placeholder="Например, 5">
+          <input type="number" id="months" min="1" max="12" step="1" required placeholder="Например, 5">
         </div>
         <button class="btn-calc" onclick="calculateGeneral()">Рассчитать общую текучесть</button>
-        <div id="resultGeneral" class="result" style="display:none;">
+        <div id="resultGeneral" class="result" style="display:none;" aria-live="polite">
           <div class="info-icon">i</div>
           <div id="tooltipContent" class="tooltip"></div>
         </div>
@@ -196,26 +207,70 @@
         </div>
         <div class="form-group">
           <label for="newhired">Количество новых сотрудников</label>
-          <input type="number" id="newhired" min="0" placeholder="Введите число">
+          <input type="number" id="newhired" min="1" step="1" required placeholder="Введите число">
         </div>
         <div class="form-group">
           <label for="newleft">Уволившиеся новые сотрудники на испытательном сроке</label>
-          <input type="number" id="newleft" min="0" placeholder="Введите число">
+          <input type="number" id="newleft" min="0" step="1" required placeholder="Введите число">
         </div>
         <button class="btn-calc" onclick="calculateNew()">Рассчитать текучесть на ИС</button>
-        <div id="resultNew" class="result" style="display:none;background:#eaf2ff;"></div>
+        <div id="resultNew" class="result" style="display:none;background:#eaf2ff;" aria-live="polite"></div>
       </div>
     </div>
   </div>
   <script>
+    function showError(resultBlock, message) {
+      resultBlock.innerHTML = `<b>Ошибка:</b> ${message}`;
+      resultBlock.classList?.add('error');
+      resultBlock.style.color = '#a93226';
+      resultBlock.style.background = '#fbeaea';
+      resultBlock.style.display = 'block';
+    }
+
+    function readInput(id) {
+      const raw = String(document.getElementById(id).value).trim();
+      return raw === '' ? null : Number(raw);
+    }
+
     function calculateGeneral() {
-      const start = parseFloat(document.getElementById('start').value) || 0;
-      const end = parseFloat(document.getElementById('end').value) || 0;
-      const left = parseFloat(document.getElementById('left').value) || 0;
-      const months = parseFloat(document.getElementById('months').value) || 0;
+      const resultBlock = document.getElementById('resultGeneral');
+      const start = readInput('start');
+      const hired = readInput('hired');
+      const end = readInput('end');
+      const left = readInput('left');
+      const months = readInput('months');
+
+      if ([start, hired, end, left, months].some(value => value === null || !Number.isFinite(value))) {
+        showError(resultBlock, 'Заполните все поля корректными числами.');
+        return;
+      }
+      if (!Number.isInteger(months) || months < 1 || months > 12) {
+        showError(resultBlock, 'Количество месяцев должно быть целым числом от 1 до 12.');
+        return;
+      }
+      if (![start, hired, end, left].every(Number.isInteger)) {
+        showError(resultBlock, 'Значения численности должны быть целыми числами.');
+        return;
+      }
+      if ([start, hired, end, left].some(value => value < 0)) {
+        showError(resultBlock, 'Значения численности должны быть неотрицательными.');
+        return;
+      }
+      if (start + hired - left !== end) {
+        const expectedEnd = start + hired - left;
+        showError(
+          resultBlock,
+          `Кадровый баланс не сходится: ожидаемая численность на конец периода — ${expectedEnd}. Проверьте количество принятых и уволившихся.`,
+        );
+        return;
+      }
 
       const avg = (start + end) / 2;
-      const turnover = avg > 0 ? (left / avg) * 100 : 0;
+      if (avg <= 0) {
+        showError(resultBlock, 'Средняя численность должна быть больше нуля.');
+        return;
+      }
+      const turnover = (left / avg) * 100;
 
       let forecast = null;
       if (months > 0 && months < 12) {
@@ -242,24 +297,47 @@
         }
       }
 
-      const resultBlock = document.getElementById('resultGeneral');
-      const tooltipBlock = document.getElementById('tooltipContent');
       let message = `Текучесть персонала: <b>${turnover.toFixed(2)}%</b>`;
       if (forecast !== null) message += `<br>Прогнозная годовая текучесть: <b>${forecast.toFixed(2)}%</b>`;
 
       resultBlock.innerHTML = `<div class="info-icon">i</div><div id="tooltipContent" class="tooltip">${tooltip}</div>` + message;
+      resultBlock.classList?.remove('error');
       resultBlock.style.color = color;
       resultBlock.style.background = bgColor;
       resultBlock.style.display = 'block';
     }
 
     function calculateNew() {
-      const newhired = parseFloat(document.getElementById('newhired').value) || 0;
-      const newleft = parseFloat(document.getElementById('newleft').value) || 0;
-      let newturnover = newhired > 0 ? (newleft / newhired) * 100 : 0;
-
       const resultNew = document.getElementById('resultNew');
+      const newhired = readInput('newhired');
+      const newleft = readInput('newleft');
+
+      if ([newhired, newleft].some(value => value === null || !Number.isFinite(value))) {
+        showError(resultNew, 'Заполните все поля корректными числами.');
+        return;
+      }
+      if (![newhired, newleft].every(Number.isInteger)) {
+        showError(resultNew, 'Значения численности должны быть целыми числами.');
+        return;
+      }
+      if (newhired < 0 || newleft < 0) {
+        showError(resultNew, 'Значения численности должны быть неотрицательными.');
+        return;
+      }
+      if (newhired === 0) {
+        showError(resultNew, 'Количество новых сотрудников должно быть больше нуля.');
+        return;
+      }
+      if (newleft > newhired) {
+        showError(resultNew, 'Количество уволившихся новых сотрудников не может превышать количество принятых.');
+        return;
+      }
+
+      const newturnover = (newleft / newhired) * 100;
       resultNew.innerHTML = `Текучесть новых сотрудников на испытательном сроке: <b>${newturnover.toFixed(2)}%</b>`;
+      resultNew.classList?.remove('error');
+      resultNew.style.color = '#1a5fc2';
+      resultNew.style.background = '#eaf2ff';
       resultNew.style.display = 'block';
     }
   </script>
